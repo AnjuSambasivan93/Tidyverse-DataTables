@@ -1,0 +1,104 @@
+---
+title: "Average Airline Delay Analysis with nycflights13 Datase"
+format: pdf
+editor: visual
+---
+
+## Introduction
+
+This project analyzes flight data from the `nycflights13` dataset to report on the average delay time for each airline, helping our client make informed decisions about airline reliability. Using the Tidyverse suite in R, we apply various data wrangling techniques to produce an ordered table that shows each airline’s average delay.
+
+### 1. Loading Tidyverse and nycflights13
+
+```{r}
+#| warning: false
+library(tidyverse)
+library(nycflights13)
+```
+
+-   **`library(tidyverse)`**: Loads the Tidyverse, a collection of R packages like `dplyr` and `ggplot2` for data manipulation and visualization.
+
+-   **`library(nycflights13)`**: Loads the `nycflights13` package, which includes datasets on NYC flights from 2013, such as `flights` (flight details) and `airlines` (airline codes and names).
+
+```{r}
+head(flights)
+
+```
+
+```{r}
+colnames(flights)
+
+```
+
+```{r}
+head(airlines)
+```
+
+**`head(flights)`** and **`head(airlines)`**: Displays the first few rows of the `flights` and `airlines` datasets to quickly inspect their structure and contents.
+
+### 2. Cleaning and Merging Flight Data with Airline Names
+
+```{r}
+time_tidyverse <- system.time(
+flights_clean <- flights %>%
+  select(carrier, dep_delay, arr_delay) %>%
+  left_join(airlines, by = "carrier") %>%
+  select(-carrier)
+)
+head(flights_clean)
+```
+```{r}
+print(time_tidyverse)
+```
+
+-   **`time_tidyverse <- system.time(...)**`: Measures how long it takes to run the code inside and saves the time as time_tidyverse.
+
+-   **`flights_clean <- flights %>%`**: Starts creating a new dataset called `flights_clean` by making changes to the `flights` data step-by-step.
+
+-   **`select(carrier, dep_delay, arr_delay)`**: Keeps only the `carrier`, `dep_delay` (departure delay), and `arr_delay` (arrival delay) columns from `flights`.
+
+-   **`left_join(airlines, by = "carrier")`**: Combines `flights` with the `airlines` data to add airline names, matching by `carrier` code.
+
+-   **`select(-carrier)`**: Removes the `carrier` code column, leaving only airline names and delay times.
+
+-   Running `head(flights_clean)` will display the first few rows of the `flights_clean` dataset. This dataset includes:
+
+    1.  **Departure delay (dep_delay)**: How many minutes the flight was delayed at departure.
+
+    2.  **Arrival delay (arr_delay)**: How many minutes the flight was delayed upon arrival.
+
+    3.  **Airline name (name)**: From the `airlines` dataset, matched using the `carrier` code.
+
+-   **`print(time_tidyverse)**`: Prints the execution time stored in time_tidyverse, showing how long the data cleaning process took.
+
+
+```{r}
+flight_means <- flights_clean %>%
+  group_by(name) %>%
+  summarize(
+    avg_dep_delay = mean(dep_delay, na.rm = TRUE ),
+    avg_arr_delay = mean(arr_delay, na.rm = TRUE),
+    .groups = 'drop'
+)%>%
+  arrange(avg_dep_delay)
+
+print(flight_means)
+```
+
+-   **`flight_means <- flights_clean %>%`**: Starts creating a new dataset called `flight_means` by processing `flights_clean` step-by-step.
+
+-   **`group_by(name)`**: Groups the data by airline name, so calculations are done for each airline separately.
+
+-   **`summarize(...)`**: Calculates the average delays for each airline:
+
+    i)  **`avg_dep_delay = mean(dep_delay, na.rm = TRUE)`**: Finds the average departure delay for each airline, ignoring any missing values.
+
+    ii) **`avg_arr_delay = mean(arr_delay, na.rm = TRUE)`**: Finds the average arrival delay for each airline, also ignoring any missing values.
+
+    iii) **`.groups = 'drop'`**: Ensures the data is no longer grouped after summarizing, making future operations easier.
+
+-   **`arrange(avg_dep_delay)`**: Orders the results by average departure delay from lowest to highest, so airlines with the least delay appear first.
+
+-   **`print(flight_means)`**: Displays the final table `flight_means`, which lists each airline with its average departure and arrival delays.
+
+
