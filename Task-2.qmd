@@ -8,6 +8,8 @@ editor: visual
 
 This project analyzes flight data from the `nycflights13` dataset to report on the average delay time for each airline, helping our client make informed decisions about airline reliability. Using the Tidyverse suite in R, we apply various data wrangling techniques to produce an ordered table that shows each airline’s average delay.
 
+## Tidyverse Analysis
+
 ### 1. Loading Tidyverse and nycflights13
 
 ```{r}
@@ -45,10 +47,16 @@ flights_clean <- flights %>%
   left_join(airlines, by = "carrier") %>%
   select(-carrier)
 )
+
+```
+
+```{r}
 head(flights_clean)
 ```
+
 ```{r}
 print(time_tidyverse)
+
 ```
 
 -   **`time_tidyverse <- system.time(...)**`: Measures how long it takes to run the code inside and saves the time as time_tidyverse.
@@ -69,8 +77,9 @@ print(time_tidyverse)
 
     3.  **Airline name (name)**: From the `airlines` dataset, matched using the `carrier` code.
 
--   **`print(time_tidyverse)**`: Prints the execution time stored in time_tidyverse, showing how long the data cleaning process took.
+-   \*\*`print(time_tidyverse)**`: Prints the execution time stored in time_tidyverse, showing how long the data cleaning process took.
 
+### 3. Calculating Average Delays by Airline Using Tidyverse
 
 ```{r}
 flight_means <- flights_clean %>%
@@ -101,4 +110,112 @@ print(flight_means)
 
 -   **`print(flight_means)`**: Displays the final table `flight_means`, which lists each airline with its average departure and arrival delays.
 
+## Data Table Analysis
 
+### 1. Loading Data Table Package
+
+```{r}
+#| warning: false
+library(data.table)
+```
+
+-   **`library(data.table)`**: Loads the `data.table` package, which is optimized for fast data manipulation.
+
+### 2. Convert data to data.tables
+
+```{r}
+flights <- as.data.table(flights)
+airlines <- as.data.table(airlines)
+```
+
+-   **`flights <- as.data.table(flights)`** and **`airlines <- as.data.table(airlines)`** convert the `flights` and `airlines` data frames into `data.table` format, which is faster for large datasets.
+
+### 3. Cleaning and Merging Flight Data with Airline Names
+
+```{r}
+time_data_table <- system.time({
+  flights_clean <- merge(flights[, .(carrier, dep_delay, arr_delay)], 
+                         airlines[, .(carrier, name)],
+                         by = "carrier", 
+                         all.x = TRUE)[, .(name, dep_delay, arr_delay)]
+})
+```
+
+-   **`time_data_table <- system.time({...})`**: Measures the time it takes to run the code inside and saves the time in `time_data_table`.
+
+-   **Inside `system.time({...})`**:
+
+    **`i) flights[, .(carrier, dep_delay, arr_delay)]`**: Selects only the `carrier`, `dep_delay`, and `arr_delay` columns from `flights`.
+
+    **`ii) airlines[, .(carrier, name)]`**: Selects only the `carrier` and `name` columns from `airlines`.
+
+    **`iii) merge(..., by = "carrier", all.x = TRUE)`**: Joins the selected columns from `flights` and `airlines` on the `carrier` column, keeping all rows from `flights`.
+
+    **`4. [, .(name, dep_delay, arr_delay)]`**: Keeps only the `name`, `dep_delay`, and `arr_delay` columns in the final result.
+
+```{r}
+head(flights_clean)
+```
+
+```{r}
+print(time_data_table)
+```
+
+**`print(time_data_table)`**: Prints the execution time stored in `time_data_table`, showing how long the data manipulation took.
+
+### 4. Calculating Average Delays by Airline Using Data.Table
+
+```{r}
+flight_means <- flights_clean[, .(
+    avg_dep_delay = mean(dep_delay, na.rm = TRUE),
+    avg_arr_delay = mean(arr_delay, na.rm = TRUE)
+), by = name][order(avg_dep_delay)]
+
+
+print(flight_means)
+
+```
+
+-   **`flights_clean[, .(...), by = name]`**: Groups the `flights_clean` data by `name` (airline name) and calculates:
+
+    **`1. avg_dep_delay = mean(dep_delay, na.rm = TRUE)`**: The average departure delay for each airline, ignoring any missing values.
+
+    **`2. avg_arr_delay = mean(arr_delay, na.rm = TRUE)`**: The average arrival delay for each airline, also ignoring any missing values.
+
+-   **`[order(avg_dep_delay)]`**: Orders the results by `avg_dep_delay` from smallest to largest.
+
+## Comparison of Tidyverse and Data Table
+
+1.   **Tidyverse**:
+
+  -  **User Time**: 0.06 seconds
+
+  -   **System Time**: 0.00 seconds
+
+  -   **Elapsed Time**: 0.07 seconds
+
+2.  **data.table**:
+
+  -   **User Time**: 0.05 seconds
+
+  -   **System Time**: 0.00 seconds
+
+  -   **Elapsed Time**: 0.06 seconds
+
+### Comparison Analysis
+
+-   **data.table** was slightly faster than Tidyverse\*\*, with an elapsed time of **0.06 seconds** compared to **0.07 seconds** for Tidyverse.
+
+-   Both approaches show very similar performance, with **minimal differences** in this example.
+
+-   For larger datasets, **data.table** is generally expected to perform better due to its optimized memory usage, but in this case, the difference is minor.
+
+This comparison suggests that for this dataset size, both approaches are nearly equivalent in speed, with data.table being slightly faster.
+
+## Observations
+
+1.  **Airlines with Low or Negative Delays**: Airlines like **US Airways Inc.**, **Hawaiian Airlines Inc.** and **Alaska Airlines Inc.** have lower average delays, with Hawaiian Airlines even showing a negative average arrival delay, indicating that flights often arrive ahead of schedule.
+
+2.  **Airlines with High Delays**: Airlines such as **ExpressJet Airlines Inc.** and **Frontier Airlines Inc.** have high average delay times, both for departures and arrivals, making them less reliable in terms of punctuality.
+
+3.  **Decision Insight**: Airlines with lower average delays (positive or negative close to zero) are generally more reliable for timely departures and arrivals, while airlines with higher delay averages may be less punctual.
